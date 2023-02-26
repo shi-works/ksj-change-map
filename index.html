@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>日本の旅客鉄道および高速道路整備の変遷</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <!-- MapLibre -->
+    <script src='https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js'></script>
+    <link href='https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css' rel='stylesheet' />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <style>
+        .map-overlay {
+            font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            position: absolute;
+            width: auto;
+            top: 0;
+            left: 0;
+            padding: 10px;
+        }
+
+        .map-overlay .map-overlay-inner {
+            background-color: #fff;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            border-radius: 3px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .map-overlay h2 {
+            line-height: 12px;
+            display: block;
+            margin: 0 0 10px;
+        }
+
+        .map-overlay .legend .bar {
+            height: 10px;
+            width: 100%;
+            background: linear-gradient(to right, #CCFFCC, #00ff00);
+        }
+
+        .map-overlay input {
+            background-color: transparent;
+            display: inline-block;
+            width: 100%;
+            position: relative;
+            margin: 0;
+            cursor: ew-resize;
+        }
+    </style>
+
+    <div id="map"></div>
+    <div class="map-overlay top">
+        <div class="map-overlay-inner">
+            <h3>日本の旅客鉄道および高速道路整備の変遷</h3>
+            使用データ：<br>
+            <a href="https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N05-v2_0.html" target="_blank"
+                rel="noopener">国土数値情報,鉄道時系列データ（国土交通省）</a><br>
+            <a href="https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N06-v2_0.html" target="_blank"
+                rel="noopener">国土数値情報,高速道路時系列データ（国土交通省）</a><br><br>
+            <label id="year_label"></label>
+            <!--<input id="slider" type="range" min="1962" max="2021" step="1" value="1962">-->
+            <input id="slider" type="range" min="1872" max="2021" step="1" value="1872">
+        </div>
+    </div>
+    <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    <script>
+        var map = new maplibregl.Map({
+            container: 'map',
+            // style: './style/dark.json',
+            style: 'https://api.maptiler.com/maps/darkmatter/style.json?key=3vP7xaDm3gASNdwulEW1',
+            center: [139.6226196, 35.4660694], // 中心座標
+            zoom: 8, // ズームレベル
+            pitch: 0 // 傾き
+        })
+
+        // ズーム・回転
+        map.addControl(new maplibregl.NavigationControl());
+
+        // フルスクリーンモードのオンオフ
+        map.addControl(new maplibregl.FullscreenControl());
+
+        // スケール表示
+        map.addControl(new maplibregl.ScaleControl({
+            maxWidth: 200,
+            unit: 'metric'
+        }));
+
+        function filterBy(year) {
+            const filter1 = ['all', ['<=', 'N06_002', year]]; // 設置期間（開始年）
+            map.setFilter('highway-lines-1', filter1);
+            map.setFilter('highway-lines-2', filter1);
+            map.setFilter('highway-lines-3', filter1);
+            map.setFilter('highway-labels', filter1);
+
+            const filter2 = ['all', ['<=', 'N05_004_int', year], ['>=', 'N05_005e_int', year]]; // 供用開始年、設置期間（設置終了）
+            map.setFilter('railroad-lines-1', filter2);
+            map.setFilter('railroad-lines-2', filter2);
+            map.setFilter('railroad-lines-3', filter2);
+            map.setFilter('railroad-labels', filter2);
+
+            // スライダー表示用ラベル
+            document.getElementById('year_label').textContent = year.toString() + '年';
+        }
+
+        map.on('load', () => {
+            d3.json(
+                './data/N06-21_HighwaySection.geojson',
+                json1Callback
+            );
+            d3.json(
+                './data/N05-21_RailroadSection2_int.geojson',
+                json2Callback
+            );
+        });
+
+        function json1Callback(data) {
+            map.addSource('highway', {
+                'type': 'geojson',
+                'data': data
+            });
+
+            // 高速道路ライン
+            map.addLayer({
+                'id': 'highway-lines-1',
+                'type': 'line',
+                'source': 'highway',
+                'layout': {
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                },
+                'paint': {
+                    'line-color': [
+                        'interpolate',
+                        ['linear'],
+                        ['get', 'N06_002'],
+                        1962,
+                        'rgba(0, 112, 32, 0.3)',
+                        2021,
+                        'rgba(0, 112, 32, 0.3)'
+                    ],
+                    'line-width': 12,
+                    'line-blur': 0.8
+                }
+            });
+
+            // 高速道路ライン
+            map.addLayer({
+                'id': 'highway-lines-2',
+                'type': 'line',
+                'source': 'highway',
+                'layout': {
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                },
+                'paint': {
+                    'line-color': [
+                        'interpolate',
+                        ['linear'],
+                        ['get', 'N06_002'],
+                        1962,
+                        'rgba(0, 172, 64, 0.6)',
+                        2021,
+                        'rgba(0, 172, 64, 0.6)'
+                    ],
+                    'line-width': 6,
+                    'line-blur': 0.4
+                }
+            });
+
+            // 高速道路ライン
+            map.addLayer({
+                'id': 'highway-lines-3',
+                'type': 'line',
+                'source': 'highway',
+                'layout': {
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                },
+                'paint': {
+                    'line-color': [
+                        'interpolate',
+                        ['linear'],
+                        ['get', 'N06_002'],
+                        1962,
+                        'rgba(220, 236, 220, 1)',
+                        2021,
+                        'rgba(220, 236, 220, 1)'
+                    ],
+                    'line-width': 1.5,
+                }
+            });
+
+            // ラベル（高速道路の名称）
+            map.addLayer({
+                'id': 'highway-labels',
+                'type': 'symbol',
+                'source': 'highway',
+                'layout': {
+                    'text-field': ['concat', ['to-string', ['get', 'N06_007']]],
+                    'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+                    'text-size': 10
+                },
+                'paint': {
+                    'text-color': 'rgba(0,0,0,0.5)',
+                    'text-color': 'rgba(255,255,255,0.8)'
+                }
+            });
+
+
+            // フィルター実行
+            filterBy(1872); // 初期表示
+            document.getElementById('slider').addEventListener('input', (e) => {
+                const year = parseInt(e.target.value, 10); // スライダーで選択した年次を整数化
+                filterBy(year);
+            });
+        }
+
+        function json2Callback(data) {
+            map.addSource('railroad', {
+                'type': 'geojson',
+                'data': data
+            });
+
+            // 鉄道ライン
+            map.addLayer({
+                'id': 'railroad-lines-1',
+                'type': 'line',
+                'source': 'railroad',
+                'layout': {
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                },
+                'paint': {
+                    'line-color': [
+                        'interpolate',
+                        ['linear'],
+                        ['get', 'N05_004_int'],
+                        1872,
+                        'rgba(0, 152, 152, 0.3)',
+                        2021,
+                        'rgba(0, 152, 152, 0.3)'
+                    ],
+                    'line-width': 12,
+                    'line-blur': 0.8
+                }
+            });
+
+            // 鉄道ライン
+            map.addLayer({
+                'id': 'railroad-lines-2',
+                'type': 'line',
+                'source': 'railroad',
+                'layout': {
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                },
+                'paint': {
+                    'line-color': [
+                        'interpolate',
+                        ['linear'],
+                        ['get', 'N05_004_int'],
+                        1872,
+                        'rgba(0, 0, 198, 0.6)',
+                        2021,
+                        'rgba(0, 0, 198, 0.6)'
+                    ],
+                    'line-width': 6,
+                    'line-blur': 0.4
+                }
+            });
+
+            // 鉄道ライン
+            map.addLayer({
+                'id': 'railroad-lines-3',
+                'type': 'line',
+                'source': 'railroad',
+                'layout': {
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                },
+                'paint': {
+                    'line-color': [
+                        'interpolate',
+                        ['linear'],
+                        ['get', 'N05_004_int'],
+                        1872,
+                        'rgba(0, 249, 249, 1)',
+                        2021,
+                        'rgba(0, 242, 249, 1)'
+                    ],
+                    'line-width': 1.5,
+                }
+            });
+
+            // ラベル（鉄道の名称）
+            map.addLayer({
+                'id': 'railroad-labels',
+                'type': 'symbol',
+                'source': 'railroad',
+                'layout': {
+                    'text-field': ['concat', ['to-string', ['get', 'N05_002']]],
+                    'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+                    'text-size': 10
+                },
+                'paint': {
+                    'text-color': 'rgba(0,0,0,0.5)',
+                    'text-color': 'rgba(255,255,255,0.8)'
+                }
+            });
+
+            // フィルター実行
+            filterBy(1872); // 初期表示
+            document.getElementById('slider').addEventListener('input', (e) => {
+                const year = parseInt(e.target.value, 10); // スライダーで選択した年次を整数化
+                filterBy(year);
+            });
+        }
+    </script>
+
+</body>
+
+</html>
