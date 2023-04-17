@@ -39,7 +39,7 @@
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
             border-radius: 3px;
             padding: 10px;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
         }
 
         .map-overlay h2 {
@@ -67,12 +67,14 @@
     <div id="map"></div>
     <div class="map-overlay top">
         <div class="map-overlay-inner">
-            <h3>日本の旅客鉄道および高速道路整備の変遷</h3>
+            <h3>日本の旅客鉄道および高速道路整備の変遷マップ</h3>
+            <!--
             使用データ：<br>
             <a href="https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N05-v2_0.html" target="_blank"
                 rel="noopener">国土数値情報,鉄道時系列データ（国土交通省）</a><br>
             <a href="https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N06-v2_0.html" target="_blank"
                 rel="noopener">国土数値情報,高速道路時系列データ（国土交通省）</a><br><br>
+            -->
             <label id="year_label"></label>
             <!--<input id="slider" type="range" min="1962" max="2021" step="1" value="1962">-->
             <input id="slider" type="range" min="1872" max="2021" step="1" value="1872">
@@ -94,6 +96,16 @@
 
         // フルスクリーンモードのオンオフ
         map.addControl(new maplibregl.FullscreenControl());
+
+        // 現在位置表示
+        map.addControl(new maplibregl.GeolocateControl({
+            positionOptions: {
+                enableHighAccuracy: false
+            },
+            fitBoundsOptions: { maxZoom: 18 },
+            trackUserLocation: true,
+            showUserLocation: true
+        }));
 
         // スケール表示
         map.addControl(new maplibregl.ScaleControl({
@@ -132,7 +144,8 @@
         function json1Callback(data) {
             map.addSource('highway', {
                 'type': 'geojson',
-                'data': data
+                'data': data,
+                attribution: '<a href="https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N06-v2_0.html">国土数値情報 高速道路時系列データ</a>'
             });
 
             // 高速道路ライン
@@ -234,7 +247,8 @@
         function json2Callback(data) {
             map.addSource('railroad', {
                 'type': 'geojson',
-                'data': data
+                'data': data,
+                attribution: '<a href="https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N05-v2_0.html">国土数値情報 鉄道時系列データ</a>'
             });
 
             // 鉄道ライン
