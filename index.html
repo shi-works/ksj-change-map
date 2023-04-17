@@ -42,7 +42,7 @@
             margin-bottom: 5px;
         }
 
-        .map-overlay h2 {
+        .map-overlay h3 {
             line-height: 12px;
             display: block;
             margin: 0 0 10px;
@@ -62,6 +62,35 @@
             margin: 0;
             cursor: ew-resize;
         }
+
+        .maplibregl-popup .maplibregl-popup-content {
+            padding: 8px 10px;
+            font: 12px/14px Arial, Helvetica, sans-serif;
+            color: black;
+            background: white;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.9);
+            border-radius: 5px;
+            width: 250px;
+            height: 200px;
+            overflow: scroll;
+        }
+
+        .label-large {
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        th,
+        td {
+            border: solid 1px;
+        }
+
+        table {
+            font-size: 8pt;
+            width: 240px;
+            border-collapse: collapse;
+        }
     </style>
 
     <div id="map"></div>
@@ -75,7 +104,7 @@
             <a href="https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N06-v2_0.html" target="_blank"
                 rel="noopener">国土数値情報,高速道路時系列データ（国土交通省）</a><br><br>
             -->
-            <label id="year_label"></label>
+            <label id="year_label" class="label-large"></label>
             <!--<input id="slider" type="range" min="1962" max="2021" step="1" value="1962">-->
             <input id="slider" type="range" min="1872" max="2021" step="1" value="1872">
         </div>
