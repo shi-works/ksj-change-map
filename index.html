@@ -72,7 +72,7 @@
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.9);
             border-radius: 5px;
             width: 250px;
-            height: 200px;
+            height: 150px;
             overflow: scroll;
         }
 
@@ -81,35 +81,59 @@
             font-weight: bold;
         }
 
-        th,
-        td {
-            border: solid 1px;
+        /*
+        .legend {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 3px;
+            bottom: 50px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.10);
+            font: 12px/14px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            padding: 10px;
+            position: absolute;
+            right: 10px;
+            z-index: 1;
+            line-height: 1.2;
+            height: auto;
         }
 
-        table {
-            font-size: 8pt;
-            width: 240px;
-            border-collapse: collapse;
+        .legend h4 {
+            margin: 0 0 10px;
         }
+
+        .legend div span {
+            border-radius: 50%;
+            display: inline-block;
+            height: 15px;
+            margin-right: 10px;
+            width: 15px;
+            color: orangered
+        }
+
+        .square {
+            width: 15px;
+            height: 5px;
+        }
+        */
     </style>
 
     <div id="map"></div>
     <div class="map-overlay top">
         <div class="map-overlay-inner">
             <h3>日本の旅客鉄道および高速道路整備の変遷マップ</h3>
-            <!--
-            使用データ：<br>
-            <a href="https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N05-v2_0.html" target="_blank"
-                rel="noopener">国土数値情報,鉄道時系列データ（国土交通省）</a><br>
-            <a href="https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N06-v2_0.html" target="_blank"
-                rel="noopener">国土数値情報,高速道路時系列データ（国土交通省）</a><br><br>
-            -->
             <label id="year_label" class="label-large"></label>
             <!--<input id="slider" type="range" min="1962" max="2021" step="1" value="1962">-->
             <input id="slider" type="range" min="1872" max="2021" step="1" value="1872">
         </div>
     </div>
-    <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    <!--
+    <div id='legend' style="display:block;" class='legend'>
+        <p><b>凡例</b></p>
+        <div class="square" style='background-color: rgb(0, 152, 152); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">鉄道路線</span><br>
+        <div class="square" style='background-color: rgb(0, 172, 64); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">高速道路</span><br>
+    </div>
+    -->
     <script>
         var map = new maplibregl.Map({
             container: 'map',
@@ -118,7 +142,8 @@
             center: [139.6226196, 35.4660694], // 中心座標
             zoom: 8, // ズームレベル
             pitch: 0, // 傾き
-            hash: true
+            hash: true,
+            attributionControl: false
         })
 
         // ズーム・回転
@@ -143,6 +168,12 @@
             unit: 'metric'
         }));
 
+        // Attributionを折りたたみ表示
+        map.addControl(new maplibregl.AttributionControl({
+            compact: true,
+            customAttribution: '（<a href="https://twitter.com/syanseto" target="_blank">Twitter</a> | <a href="https://github.com/shi-works/ksj-change-map" target="_blank">Github</a>） '
+        }));
+
         function filterBy(year) {
             const filter1 = ['all', ['<=', 'N06_002', year]]; // 設置期間（開始年）
             map.setFilter('highway-lines-1', filter1);
@@ -161,20 +192,10 @@
         }
 
         map.on('load', () => {
-            d3.json(
-                './data/N06-21_HighwaySection.geojson',
-                json1Callback
-            );
-            d3.json(
-                './data/N05-21_RailroadSection2_int.geojson',
-                json2Callback
-            );
-        });
-
-        function json1Callback(data) {
+            // 高速道路GoeJSONソース
             map.addSource('highway', {
                 'type': 'geojson',
-                'data': data,
+                'data': './data/N06-21_HighwaySection.geojson',
                 attribution: '<a href="https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N06-v2_0.html">国土数値情報 高速道路時系列データ</a>'
             });
 
@@ -257,27 +278,22 @@
                 'layout': {
                     'text-field': ['concat', ['to-string', ['get', 'N06_007']]],
                     'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-                    'text-size': 10
+                    'text-size': 12,
+                    'text-anchor': 'center',
+                    'text-justify': 'center',
+                    'symbol-placement': 'line-center'
                 },
                 'paint': {
-                    'text-color': 'rgba(0,0,0,0.5)',
-                    'text-color': 'rgba(255,255,255,0.8)'
+                    'text-color': 'rgba(255, 255, 255, 1)',
+                    'text-halo-color': 'rgb(0, 112, 32)',
+                    'text-halo-width': 1
                 }
             });
 
-
-            // フィルター実行
-            filterBy(1872); // 初期表示
-            document.getElementById('slider').addEventListener('input', (e) => {
-                const year = parseInt(e.target.value, 10); // スライダーで選択した年次を整数化
-                filterBy(year);
-            });
-        }
-
-        function json2Callback(data) {
+            // 鉄道GeoJSONソース
             map.addSource('railroad', {
                 'type': 'geojson',
-                'data': data,
+                'data': './data/N05-21_RailroadSection2_int.geojson',
                 attribution: '<a href="https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N05-v2_0.html">国土数値情報 鉄道時系列データ</a>'
             });
 
@@ -360,13 +376,19 @@
                 'layout': {
                     'text-field': ['concat', ['to-string', ['get', 'N05_002']]],
                     'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-                    'text-size': 10
+                    'text-size': 12,
+                    'text-anchor': 'center',
+                    'text-justify': 'center',
+                    'symbol-placement': 'line-center'
                 },
                 'paint': {
-                    'text-color': 'rgba(0,0,0,0.5)',
-                    'text-color': 'rgba(255,255,255,0.8)'
+                    'text-color': 'rgba(255, 255, 255, 1)',
+                    'text-halo-color': 'rgb(0, 152, 152)',
+                    'text-halo-width': 1
                 }
             });
+
+
 
             // フィルター実行
             filterBy(1872); // 初期表示
@@ -374,7 +396,112 @@
                 const year = parseInt(e.target.value, 10); // スライダーで選択した年次を整数化
                 filterBy(year);
             });
-        }
+
+        });
+
+        // 鉄道ポップアップ表示
+        map.on('click', 'railroad-lines-1', async (e) => {
+            var N05_001 = e.features[0].properties['N05_001']; // 事業者種別
+            var N05_002 = e.features[0].properties['N05_002']; // 路線名
+            var N05_003 = e.features[0].properties['N05_003']; // 運営会社
+            var N05_004 = e.features[0].properties['N05_004']; // 供用開始年
+            var N05_005b = e.features[0].properties['N05_005b']; // 設置期間（設置開始）
+            var N05_005e = e.features[0].properties['N05_005e']; // 設置期間（設置終了）
+
+            // 事業者種別
+            var N05_001_Name = N05_001;
+            if (N05_001 === '1') {
+                N05_001_Name = '新幹線（旧国鉄）'
+            } else if (N05_001 === '2') {
+                N05_001_Name = 'JR在来線（旧国鉄含む）'
+            } else if (N05_001 === '3') {
+                N05_001_Name = '公営鉄道'
+            } else if (N05_001 === '4') {
+                N05_001_Name = '民営鉄道'
+            } else if (N05_001 === '5') {
+                N05_001_Name = '第三セクター'
+            };
+
+            // 設置期間（設置終了）
+            var N05_005e_Name = N05_005e;
+            if (N05_005e === '9999') {
+                N05_005e_Name = '現存'
+            } else if (N05_005e === '999') {
+                N05_005e_Name = '不明'
+            };
+
+            new maplibregl.Popup()
+                .setLngLat(e.lngLat)
+                .setHTML(
+                    '<div style="border-bottom:1px solid #000; color: black;"><strong>路線名: <span style="color: rgb(0, 152, 152);">' + N05_002 + '</span></strong></div>' +
+                    '<div style="border-bottom:1px solid #000;">事業者種別: ' + N05_001_Name + '</div>' +
+                    '<div style="border-bottom:1px solid #000;">運営会社: ' + N05_003 + '</div>' +
+                    '<div style="border-bottom:1px solid #000;">供用開始年: ' + N05_004 + '</div>' +
+                    '<div style="border-bottom:1px solid #000;">設置期間（設置開始）: ' + N05_005b + '</div>' +
+                    '<div style="border-bottom:1px solid #000;">設置期間（設置終了）: ' + N05_005e_Name + '</div>'
+                )
+                .addTo(map);
+        });
+
+        // 高速道路ポップアップ表示
+        map.on('click', 'highway-lines-1', async (e) => {
+            var N06_007 = e.features[0].properties['N06_007']; // 路線名
+            var N06_008 = e.features[0].properties['N06_008']; // 路線種別
+            var N06_009 = e.features[0].properties['N06_009']; // 供用状況
+            var N06_010 = e.features[0].properties['N06_010']; // 車線数
+            var N06_001 = e.features[0].properties['N06_001']; // 供用開始年
+            var N06_002 = e.features[0].properties['N06_002']; // 設置期間（開始年）
+            var N06_003 = e.features[0].properties['N06_003']; // 設置期間（終了年）
+
+            // 路線種別
+            var N06_008_Name = N06_008;
+            if (N06_008 === '1') {
+                N06_008_Name = '高速自動車国道'
+            } else if (N06_008 === '2') {
+                N06_008_Name = '高速自動車国道に並行する自動車専用道路'
+            } else if (N06_008 === '3') {
+                N06_008_Name = '一般国道の自動車専用道路'
+            } else if (N06_008 === '4') {
+                N06_008_Name = '本州四国連絡高速道路'
+            } else if (N06_008 === '5') {
+                N06_008_Name = '指定都市高速道路'
+            } else if (N06_008 === '6') {
+                N06_008_Name = 'その他の道路'
+            };
+
+            // 供用状況
+            var N06_009_Name = N06_009;
+            if (N06_009 === '1') {
+                N06_009_Name = '完成供用'
+            } else if (N06_009 === '2') {
+                N06_009_Name = '暫定供用'
+            } else if (N06_009 === '3') {
+                N06_009_Name = '高速自動車国道に切り替えて供用'
+            } else if (N06_009 === '4') {
+                N06_009_Name = '一般国道に切り替えて供用'
+            } else if (N06_009 === '5') {
+                N06_009_Name = 'その他の供用'
+            };
+
+            // 設置期間（設置終了）
+            var N06_003_Name = N06_003;
+            if (N06_003 === 9999) {
+                N06_003_Name = '継続中'
+            };
+
+            new maplibregl.Popup()
+                .setLngLat(e.lngLat)
+                .setHTML(
+                    '<div style="border-bottom:1px solid #000; color: black;"><strong>路線名: <span style="color: rgb(0, 112, 32);">' + N06_007 + '</span></strong></div>' +
+                    '<div style="border-bottom:1px solid #000;">路線種別: ' + N06_008_Name + '</div>' +
+                    '<div style="border-bottom:1px solid #000;">供用状況: ' + N06_009_Name + '</div>' +
+                    '<div style="border-bottom:1px solid #000;">車線数: ' + N06_010 + '</div>' +
+                    '<div style="border-bottom:1px solid #000;">供用開始年: ' + N06_001 + '</div>' +
+                    '<div style="border-bottom:1px solid #000;">設置期間（開始年）: ' + N06_002 + '</div>' +
+                    '<div style="border-bottom:1px solid #000;">設置期間（終了年）: ' + N06_003_Name + '</div>'
+                )
+                .addTo(map);
+        });
     </script>
 
 </body>
